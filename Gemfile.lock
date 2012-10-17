@@ -1,8 +1,13 @@
+GIT
+  remote: git://github.com/ruby-ldap/ruby-net-ldap.git
+  revision: 8a182675f4f777fa15bdffab64ead773e034b7d0
+  specs:
+    net-ldap (0.4.0)
+
 PATH
   remote: .
   specs:
     omniauth-ldap (1.0.2)
-      net-ldap (~> 0.2.2)
       omniauth (~> 1.0)
       pyu-ruby-sasl (~> 0.0.3.1)
       rubyntlm (~> 0.1.1)
@@ -28,8 +33,7 @@ GEM
     linecache19 (0.5.12)
       ruby_core_source (>= 0.1.4)
     multi_json (1.0.3)
-    net-ldap (0.2.2)
-    omniauth (1.0.1)
+    omniauth (1.1.1)
       hashie (~> 1.2)
       rack
     pyu-ruby-sasl (0.0.3.3)
@@ -71,6 +75,7 @@ DEPENDENCIES
   guard-bundler
   guard-rspec
   libnotify
+  net-ldap!
   omniauth-ldap!
   rack-test
   rb-fsevent
