@@ -82,30 +82,79 @@ describe "OmniAuth::Strategies::LDAP" do
 
     context 'success' do
       let(:auth_hash){ last_request.env['omniauth.auth'] }
-      before(:each) do
-        @adaptor.stub(:bind_as).and_return({:dn => ['cn=ping, dc=intridea, dc=com'], :mail => ['ping@intridea.com'], :givenname => ['Ping'], :sn => ['Yu'],
-                                           :telephonenumber => ['555-555-5555'], :mobile => ['444-444-4444'], :uid => ['ping'], :title => ['dev'], :address =>[ 'k street'],
-                                           :l => ['Washington'], :st => ['DC'], :co => ["U.S.A"], :postofficebox => ['20001'], :wwwhomepage => ['www.intridea.com'],
-                                           :jpegphoto => ['http://www.intridea.com/ping.jpg'], :description => ['omniauth-ldap']})
-        post('/auth/ldap/callback', {:username => 'ping', :password => 'password'})
+      let(:search_result) do
+        {
+          :dn => ['cn=ping, dc=intridea, dc=com'], 
+          :mail => ['ping@intridea.com'], 
+          :givenname => ['Ping'], 
+          :sn => ['Yu'],
+          :telephonenumber => ['555-555-5555'], 
+          :mobile => ['444-444-4444'], 
+          :uid => ['ping'], 
+          :title => ['dev'], 
+          :address =>[ 'k street'],
+          :l => ['Washington'], 
+          :st => ['DC'], 
+          :co => ["U.S.A"], 
+          :postofficebox => ['20001'], 
+          :wwwhomepage => ['www.intridea.com'],
+          :jpegphoto => ['http://www.intridea.com/ping.jpg'], 
+          :description => ['omniauth-ldap']
+        }
       end
 
-      it 'should raise MissingCredentialsError' do
-        should_not raise_error OmniAuth::Strategies::LDAP::MissingCredentialsError
+      let(:search_result_alt_fields) do
+        search_result.dup.tap do |hsh|
+          hsh[:userprincipalname] = hsh[:mail]
+          hsh.delete :mail
+        end
       end
-      it 'should map user info' do
-        auth_hash.uid.should == 'cn=ping, dc=intridea, dc=com'
-        auth_hash.info.email.should == 'ping@intridea.com'
-        auth_hash.info.first_name.should == 'Ping'
-        auth_hash.info.last_name.should == 'Yu'
-        auth_hash.info.phone.should == '555-555-5555'
-        auth_hash.info.mobile.should == '444-444-4444'
-        auth_hash.info.nickname.should == 'ping'
-        auth_hash.info.title.should == 'dev'
-        auth_hash.info.location.should == 'k street, Washington, DC, U.S.A 20001'
-        auth_hash.info.url.should == 'www.intridea.com'
-        auth_hash.info.image.should == 'http://www.intridea.com/ping.jpg'
-        auth_hash.info.description.should == 'omniauth-ldap'
+
+      let(:verify_block) { 
+        Proc.new do
+          auth_hash.uid.should == 'cn=ping, dc=intridea, dc=com'
+          auth_hash.info.email.should == 'ping@intridea.com'
+          auth_hash.info.first_name.should == 'Ping'
+          auth_hash.info.last_name.should == 'Yu'
+          auth_hash.info.phone.should == '555-555-5555'
+          auth_hash.info.mobile.should == '444-444-4444'
+          auth_hash.info.nickname.should == 'ping'
+          auth_hash.info.title.should == 'dev'
+          auth_hash.info.location.should == 'k street, Washington, DC, U.S.A 20001'
+          auth_hash.info.url.should == 'www.intridea.com'
+          auth_hash.info.image.should == 'http://www.intridea.com/ping.jpg'
+          auth_hash.info.description.should == 'omniauth-ldap'
+        end
+      }
+
+      context 'results with first option' do
+        before(:each) do
+          @adaptor.stub(:bind_as).and_return(search_result)
+          post('/auth/ldap/callback', {:username => 'ping', :password => 'password'})
+        end
+
+        it 'should raise MissingCredentialsError' do
+          should_not raise_error OmniAuth::Strategies::LDAP::MissingCredentialsError
+        end
+
+        it 'should map user info' do
+          verify_block.call
+        end
+      end
+
+      context 'results with alternate fields' do
+        before(:each) do
+          @adaptor.stub(:bind_as).and_return(search_result_alt_fields)
+          post('/auth/ldap/callback', {:username => 'ping', :password => 'password'})
+        end
+
+        it 'should raise MissingCredentialsError' do
+          should_not raise_error OmniAuth::Strategies::LDAP::MissingCredentialsError
+        end
+
+        it 'should map user info' do
+          verify_block.call
+        end
       end
     end
   end
