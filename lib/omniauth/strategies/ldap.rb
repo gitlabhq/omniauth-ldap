@@ -70,9 +70,11 @@ module OmniAuth
         mapper.each do |key, value|
           case value
           when String
-            user[key] = object[value.downcase.to_sym].first if object[value.downcase.to_sym]
+            user[key] = [object[value.downcase.to_sym]].flatten.first
           when Array
-            value.each {|v| (user[key] = object[v.downcase.to_sym].first; break;) if object[v.downcase.to_sym]}
+            user[key] = value.map { |v| 
+              [object[v.downcase.to_sym]].flatten.first 
+            }.compact.first
           when Hash
             value.map do |key1, value1|
               pattern = key1.dup
