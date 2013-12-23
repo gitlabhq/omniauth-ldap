@@ -82,30 +82,74 @@ describe "OmniAuth::Strategies::LDAP" do
 
     context 'success' do
       let(:auth_hash){ last_request.env['omniauth.auth'] }
-      before(:each) do
-        @adaptor.stub(:bind_as).and_return({:dn => ['cn=ping, dc=intridea, dc=com'], :mail => ['ping@intridea.com'], :givenname => ['Ping'], :sn => ['Yu'],
-                                           :telephonenumber => ['555-555-5555'], :mobile => ['444-444-4444'], :uid => ['ping'], :title => ['dev'], :address =>[ 'k street'],
-                                           :l => ['Washington'], :st => ['DC'], :co => ["U.S.A"], :postofficebox => ['20001'], :wwwhomepage => ['www.intridea.com'],
-                                           :jpegphoto => ['http://www.intridea.com/ping.jpg'], :description => ['omniauth-ldap']})
-        post('/auth/ldap/callback', {:username => 'ping', :password => 'password'})
+      let(:ldif_string) do
+%Q{
+dn: cn=ping, dc=intridea, dc=com
+mail: ping@intridea.com
+givenname: Ping
+sn: Yu
+telephonenumber: 555-555-5555
+mobile: 444-444-4444
+uid: ping
+title: dev
+address: k street
+l: Washington
+st: DC
+co: U.S.A
+postofficebox: 20001
+wwwhomepage: www.intridea.com
+jpegphoto: http://www.intridea.com/ping.jpg
+description: omniauth-ldap}
       end
+      let(:ldif_string_with_alt){ ldif_string.sub('mail:', 'userprincipalname:') }
+      let(:search_result){ Net::LDAP::Entry.from_single_ldif_string(ldif_string) }
+      let(:search_result_with_alt){ Net::LDAP::Entry.from_single_ldif_string(ldif_string_with_alt) }
+      
+      let(:verify_block) {
+        Proc.new do
+          auth_hash.uid.should == 'cn=ping, dc=intridea, dc=com'
+          auth_hash.info.email.should == 'ping@intridea.com'
+          auth_hash.info.first_name.should == 'Ping'
+          auth_hash.info.last_name.should == 'Yu'
+          auth_hash.info.phone.should == '555-555-5555'
+          auth_hash.info.mobile.should == '444-444-4444'
+          auth_hash.info.nickname.should == 'ping'
+          auth_hash.info.title.should == 'dev'
+          auth_hash.info.location.should == 'k street, Washington, DC, U.S.A 20001'
+          auth_hash.info.url.should == 'www.intridea.com'
+          auth_hash.info.image.should == 'http://www.intridea.com/ping.jpg'
+          auth_hash.info.description.should == 'omniauth-ldap'
+        end
+      }
+      
+      context 'results with standard fields' do
+        before(:each) do
+           @adaptor.stub(:bind_as).and_return(search_result)
+           post('/auth/ldap/callback', {:username => 'ping', :password => 'password'})
+        end
 
-      it 'should raise MissingCredentialsError' do
-        should_not raise_error OmniAuth::Strategies::LDAP::MissingCredentialsError
+        it 'should raise MissingCredentialsError' do
+          should_not raise_error OmniAuth::Strategies::LDAP::MissingCredentialsError
+        end
+
+        it 'should map user info' do
+          verify_block.call
+        end
       end
-      it 'should map user info' do
-        auth_hash.uid.should == 'cn=ping, dc=intridea, dc=com'
-        auth_hash.info.email.should == 'ping@intridea.com'
-        auth_hash.info.first_name.should == 'Ping'
-        auth_hash.info.last_name.should == 'Yu'
-        auth_hash.info.phone.should == '555-555-5555'
-        auth_hash.info.mobile.should == '444-444-4444'
-        auth_hash.info.nickname.should == 'ping'
-        auth_hash.info.title.should == 'dev'
-        auth_hash.info.location.should == 'k street, Washington, DC, U.S.A 20001'
-        auth_hash.info.url.should == 'www.intridea.com'
-        auth_hash.info.image.should == 'http://www.intridea.com/ping.jpg'
-        auth_hash.info.description.should == 'omniauth-ldap'
+      
+      context 'results with alternate fields' do
+        before(:each) do
+           @adaptor.stub(:bind_as).and_return(search_result_with_alt)
+           post('/auth/ldap/callback', {:username => 'ping', :password => 'password'})
+        end
+
+        it 'should raise MissingCredentialsError' do
+          should_not raise_error OmniAuth::Strategies::LDAP::MissingCredentialsError
+        end
+
+        it 'should map user info' do
+          verify_block.call
+        end
       end
     end
   end
