@@ -85,7 +85,7 @@ describe "OmniAuth::Strategies::LDAP" do
       before(:each) do
         @adaptor.stub(:bind_as).and_return(Net::LDAP::Entry.from_single_ldif_string(
       %Q{dn: cn=ping, dc=intridea, dc=com
-mail: ping@intridea.com
+email: ping@intridea.com
 givenname: Ping
 sn: Yu
 telephonenumber: 555-555-5555
