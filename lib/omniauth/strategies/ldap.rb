@@ -4,7 +4,7 @@ module OmniAuth
   module Strategies
     class LDAP
       include OmniAuth::Strategy
-      @@config = {
+      option :mapping, {
         'name' => 'cn',
         'first_name' => 'givenName',
         'last_name' => 'sn',
@@ -43,7 +43,7 @@ module OmniAuth
 
           return fail!(:invalid_credentials) if !@ldap_user_info
 
-          @user_info = self.class.map_user(@@config, @ldap_user_info)
+          @user_info = self.class.map_user(@options[:mapping], @ldap_user_info)
           super
         rescue Exception => e
           return fail!(:ldap_error, e)
