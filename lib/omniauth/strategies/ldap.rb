@@ -17,7 +17,8 @@ module OmniAuth
         'uid' => 'dn',
         'url' => ['wwwhomepage'],
         'image' => 'jpegPhoto',
-        'description' => 'description'
+        'description' => 'description',
+        'gid' => 'gidNumber'
       }
       option :title, "LDAP Authentication" #default title for authentication form
       option :port, 389
